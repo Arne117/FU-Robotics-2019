@@ -7,7 +7,7 @@ print("running subscriber")
 import rospy
 # from rplidar_decoder import PointCloudConverter
 
-from autominy_msgs import Speed
+from autominy_msgs.msg import Speed
 # import autominy_msgs
 # from autominy_msgs import *
 
@@ -18,7 +18,7 @@ def callback(raw_msg):
     print(raw_msg)
 
 # Initialize node
-# rospy.init_node("pointcloud_node")
+# rospy.init_node("name")
 
 # Initialize subscriber
 

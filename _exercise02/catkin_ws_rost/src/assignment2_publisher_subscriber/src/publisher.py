@@ -3,7 +3,7 @@
 # RAN SCAN PUBLISHER
 
 import rospy
-from rplidar_ros import ObstacleDetector
+from rplidar import ObstacleDetector
 from sensor_msgs.msg import LaserScan
 
 # Initialize node
