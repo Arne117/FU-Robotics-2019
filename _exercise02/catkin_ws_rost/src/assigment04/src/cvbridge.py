@@ -59,6 +59,16 @@ class image_converter:
       #32
       cv2.rectangle(cv_image, (488, 218), (520, 231), 10, thickness=1, lineType=8, shift=0)
 
+      subImg11Coordiantes = [115, 255]
+      subImg12Coordiantes = [108, 408]
+      subImg21Coordiantes = [155, 238]
+      subImg22Coordiantes = [145, 433]
+      subImg31Coordiantes = [230, 195]
+      subImg32Coordiantes = [218, 488]
+
+      subImageCoordiantes = [ subImg11Coordiantes, subImg12Coordiantes, subImg21Coordiantes, subImg22Coordiantes, subImg31Coordiantes, subImg32Coordiantes ]
+
+    # CHange image threshhold
     ret,thresh1 = cv2.threshold(cv_image, 200, 255, cv2.THRESH_BINARY)
 
     subImg11 = thresh1[115:130, 255:280]
@@ -70,8 +80,11 @@ class image_converter:
 
     subImages = [ subImg11, subImg12, subImg21, subImg22, subImg31, subImg32 ]
 
-    for img in subImages:
-        print(self.getCenter(img))
+    print("----")
+    for i, img in enumerate(subImages):
+        imgCenter = self.getCenter(img)
+        absoluteCenter = [subImageCoordiantes[i][0] + imgCenter[0], subImageCoordiantes[i][1] + imgCenter[1]]
+        print(absoluteCenter)
 
     # cv2.rectangle(dot11, (center11[0], center11[1]), (center11[0]+1, center11[1]+1), 10, -1, lineType=8, shift=0)
 
