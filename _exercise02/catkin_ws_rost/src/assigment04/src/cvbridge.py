@@ -9,6 +9,7 @@ import cv2
 from std_msgs.msg import String
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
+import numpy as np
 
 class image_converter:
 
@@ -17,6 +18,17 @@ class image_converter:
 
     self.bridge = CvBridge()
     self.image_sub = rospy.Subscriber("/sensors/camera/infra1/image_rect_raw", Image,self.callback)
+    # Starts with top left and goes to bottom right.
+    self.realWorldObjectPoints = np.array([
+        [1.1, 0.2, 0],
+        [1.1, -0.2, 0],
+        [0.8, 0.2, 0],
+        [0.8, -0.2, 0],
+        [0.5, 0.2, 0],
+        [0.5, -0.2, 0],
+    ], dtype = np.float32)
+    self.cameraMatrix = np.matrix('383.7944641113281 0 322.3056945800781; 0 383.7944641113281 241.67051696777344; 0 0 1')
+    self.distCoeffs = np.array([ 0.0, 0.0, 0.0, 0.0, 0.0 ])
 
   def getCenter(self, img):
       counter = 0
@@ -80,16 +92,25 @@ class image_converter:
 
     subImages = [ subImg11, subImg12, subImg21, subImg22, subImg31, subImg32 ]
 
-    print("----")
+    absoluteCenters = []
     for i, img in enumerate(subImages):
         imgCenter = self.getCenter(img)
         absoluteCenter = [subImageCoordiantes[i][0] + imgCenter[0], subImageCoordiantes[i][1] + imgCenter[1]]
-        print(absoluteCenter)
+        absoluteCenters.append(absoluteCenter)
 
-    # cv2.rectangle(dot11, (center11[0], center11[1]), (center11[0]+1, center11[1]+1), 10, -1, lineType=8, shift=0)
+    print("----+")
+    # print(absoluteCenters)
+
+
+    retval, rvec, tvec = cv2.solvePnP(self.realWorldObjectPoints, np.array(absoluteCenters, dtype = np.float32), self.cameraMatrix, self.distCoeffs)
+    # print("----")
+    # print(rvec)
+    # print("----")
+    # print(tvec)
+
+    print(cv2.Rodrigues(rvec))
 
     cv2.imshow("Image window", cv_image)
-    # cv2.imshow("Dot window", dot11)
     # cv2.imshow("cropped", dot11)
     # cv2.imshow("cropped", dot12)
     # cv2.imshow("cropped", dot21)
