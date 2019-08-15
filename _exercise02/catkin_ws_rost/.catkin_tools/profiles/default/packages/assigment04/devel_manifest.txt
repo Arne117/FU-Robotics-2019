@@ -1,0 +1,5 @@
+assigment04
+/home/arne/Documents/catkin_ws_rost/_exercise02/catkin_ws_rost/devel/.private/assigment04/cmake.lock /home/arne/Documents/catkin_ws_rost/_exercise02/catkin_ws_rost/devel/./cmake.lock
+/home/arne/Documents/catkin_ws_rost/_exercise02/catkin_ws_rost/devel/.private/assigment04/lib/pkgconfig/assigment04.pc /home/arne/Documents/catkin_ws_rost/_exercise02/catkin_ws_rost/devel/lib/pkgconfig/assigment04.pc
+/home/arne/Documents/catkin_ws_rost/_exercise02/catkin_ws_rost/devel/.private/assigment04/share/assigment04/cmake/assigment04Config.cmake /home/arne/Documents/catkin_ws_rost/_exercise02/catkin_ws_rost/devel/share/assigment04/cmake/assigment04Config.cmake
+/home/arne/Documents/catkin_ws_rost/_exercise02/catkin_ws_rost/devel/.private/assigment04/share/assigment04/cmake/assigment04Config-version.cmake /home/arne/Documents/catkin_ws_rost/_exercise02/catkin_ws_rost/devel/share/assigment04/cmake/assigment04Config-version.cmake
