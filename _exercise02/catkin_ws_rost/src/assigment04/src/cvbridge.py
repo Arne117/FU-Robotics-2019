@@ -103,17 +103,18 @@ class image_converter:
         absoluteCenters.append(absoluteCenter)
         cv2.rectangle(cv_image, (absoluteCenter[0], absoluteCenter[1]), (absoluteCenter[0] + 1, absoluteCenter[1] + 1), 10, thickness=1, lineType=8, shift=0)
 
-    print("----+")
+    print("----absoluteCenters-----")
     print(absoluteCenters)
 
 
     # Aufgabe 5
     retval, rvec, tvec = cv2.solvePnP(self.realWorldObjectPoints, np.array(absoluteCenters, dtype = np.float32), self.cameraMatrix, self.distCoeffs)
-    # print("----")
-    # print(rvec)
-    # print("----")
-    # print(tvec)
+    print("----rvec-----")
+    print(rvec)
+    print("----tvec-----")
+    print(tvec)
 
+    print("----Rodrigues-----")
     print(cv2.Rodrigues(rvec))
 
     cv2.imshow("Image window", cv_image)
