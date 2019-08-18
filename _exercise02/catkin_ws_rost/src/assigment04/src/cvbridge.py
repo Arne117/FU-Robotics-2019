@@ -17,6 +17,7 @@ class image_converter:
     self.image_pub = rospy.Publisher("cvbridge",Image)
 
     self.bridge = CvBridge()
+    # Aufgabe 3
     self.image_sub = rospy.Subscriber("/sensors/camera/infra1/image_rect_raw", Image,self.callback)
     # Starts with top left and goes to bottom right.
     self.realWorldObjectPoints = np.array([
@@ -42,7 +43,7 @@ class image_converter:
                   sumY += y
                   counter += 1
 
-      return [sumX / counter, sumY / counter]
+      return [sumY / counter, sumX / counter]
 
   def callback(self,data):
     try:
@@ -52,12 +53,12 @@ class image_converter:
 
     (rows,cols,channels) = cv_image.shape
     if cols > 60 and rows > 60 :
-      # cv2.reactangle(cv_image, (50,50), 10, 255)
+      # Aufgabe 3
       cv2.rectangle(cv_image, (0, 0), (640, 108), 10, -1, lineType=8, shift=0)
       cv2.rectangle(cv_image, (0, 247), (640, 480), 10, -1, lineType=8, shift=0)
       cv2.rectangle(cv_image, (0, 108), (180, 247), 10, -1, lineType=8, shift=0)
 
-      # Bounding Rect positions
+      # Aufgabe 4 Bounding Rect positions
       #11
       cv2.rectangle(cv_image, (255, 115), (280, 130), 10, thickness=1, lineType=8, shift=0)
       #12
@@ -71,6 +72,7 @@ class image_converter:
       #32
       cv2.rectangle(cv_image, (488, 218), (520, 231), 10, thickness=1, lineType=8, shift=0)
 
+      # Aufgabe 4
       subImg11Coordiantes = [115, 255]
       subImg12Coordiantes = [108, 408]
       subImg21Coordiantes = [155, 238]
@@ -80,9 +82,10 @@ class image_converter:
 
       subImageCoordiantes = [ subImg11Coordiantes, subImg12Coordiantes, subImg21Coordiantes, subImg22Coordiantes, subImg31Coordiantes, subImg32Coordiantes ]
 
-    # CHange image threshhold
+    # Aufgabe 3 Change image threshhold
     ret,thresh1 = cv2.threshold(cv_image, 200, 255, cv2.THRESH_BINARY)
 
+    # Aufgabe 4 sub images ausschneiden
     subImg11 = thresh1[115:130, 255:280]
     subImg12 = thresh1[108:118, 408:428]
     subImg21 = thresh1[155:168, 238:256]
@@ -92,16 +95,19 @@ class image_converter:
 
     subImages = [ subImg11, subImg12, subImg21, subImg22, subImg31, subImg32 ]
 
+    #Aufgabe 4
     absoluteCenters = []
     for i, img in enumerate(subImages):
         imgCenter = self.getCenter(img)
-        absoluteCenter = [subImageCoordiantes[i][0] + imgCenter[0], subImageCoordiantes[i][1] + imgCenter[1]]
+        absoluteCenter = [subImageCoordiantes[i][1] + imgCenter[1], subImageCoordiantes[i][0] + imgCenter[0]]
         absoluteCenters.append(absoluteCenter)
+        cv2.rectangle(cv_image, (absoluteCenter[0], absoluteCenter[1]), (absoluteCenter[0] + 1, absoluteCenter[1] + 1), 10, thickness=1, lineType=8, shift=0)
 
     print("----+")
-    # print(absoluteCenters)
+    print(absoluteCenters)
 
 
+    # Aufgabe 5
     retval, rvec, tvec = cv2.solvePnP(self.realWorldObjectPoints, np.array(absoluteCenters, dtype = np.float32), self.cameraMatrix, self.distCoeffs)
     # print("----")
     # print(rvec)
