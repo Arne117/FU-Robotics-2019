@@ -19,8 +19,8 @@ class image_converter:
 
     self.bridge = CvBridge()
     # Aufgabe 3
-    self.image_sub = rospy.Subscriber("/sensors/camera/infra1/image_rect_raw", Image,self.callback)
-    self.distanceThreshold = 10
+    self.image_sub = rospy.Subscriber("/sensors/camera/infra1/image_rect_raw", Image, self.callback)
+    self.distanceThreshold = 15
 
   def getWhitePixels(self, img):
       counter = 0
@@ -37,9 +37,10 @@ class image_converter:
       return whitePixels
 
   def ransec(self, whitePixels, img):
-      s = len(whitePixels)
-      print('------------------s-----------------', s)
-      while len(whitePixels) > 0:
+      print('------------------RANSEC-----------------')
+      lines = []
+      while len(whitePixels) >= 150:
+          s = len(whitePixels)
           # whitePixels.pop(byIndex)
           # whitePixels.remove(byValue)
           samplesIndex = np.random.choice(s, 2)
@@ -54,17 +55,29 @@ class image_converter:
               if dist <= self.distanceThreshold:
                   inliers.append(i)
 
-          if len(inliers) >= s / 5:
-              cv2.line(img, (samples[1][0], samples[1][1]), (samples[0][0], samples[0][1]) ,(255,0,0), 1)
-              print('nice')
+          if len(inliers) >= s / 4:
+              lines.append([samples[0], samples[1]])
+              print('accepted')
+              print('------------------s-----------------', s)
               # whitePixels = [ e for e in whitePixels if e not in inliers ]
-              whitePixels = np.delete(whitePixels, inliers, axis=1)
+              # whitePixels = np.delete(whitePixels, inliers, axis=1)
+              length = len(inliers) - 1
+              for i, j in enumerate(inliers):
+                  # print(i, j)
+                  del whitePixels[inliers[length-i]]
               print(len(whitePixels))
           else:
               print('failed')
 
           # whitePixels = [ e for e in whitePixels if e not in ('item', 5) ]
           # print(list(filter(lambda x: x < 0, whitePixels)))
+      for line in lines:
+          m =  line[1][1] - line[0][1] / line[1][0] - line[0][0]
+          b = line[1][1] - m * line[1][0]
+          # print('m = ', m)
+          # print('b = ', b)
+          print('y = ', m, 'x + ', b)
+          cv2.line(img, (line[1][0], line[1][1]), (line[0][0], line[0][1]) ,(255,0,0), 2)
 
   def callback(self,data):
     try:
@@ -74,15 +87,17 @@ class image_converter:
 
     (rows,cols,channels) = cv_image.shape
 
-    cv2.rectangle(cv_image, (0, 0), (640, 93), 10, -1, lineType=8, shift=0)
-    cv2.rectangle(cv_image, (0, 240), (640, 480), 10, -1, lineType=8, shift=0)
+    # cv2.rectangle(cv_image, (0, 0), (640, 93), 10, -1, lineType=8, shift=0)
+    # cv2.rectangle(cv_image, (0, 240), (640, 480), 10, -1, lineType=8, shift=0)
+
+    croppedImg = cv_image[93:240, 0:640]
 
     # Aufgabe 3 Change image threshhold
-    ret,thresh1 = cv2.threshold(cv_image, 200, 255, cv2.THRESH_BINARY)
+    ret,thresh1 = cv2.threshold(croppedImg, 200, 255, cv2.THRESH_BINARY)
 
-    whitePixels = self.getWhitePixels(thresh1)
-
-    self.ransec(whitePixels, thresh1)
+    # whitePixels = self.getWhitePixels(thresh1)
+    #
+    # self.ransec(whitePixels, thresh1)
 
     cv2.imshow("Image window", thresh1)
     cv2.waitKey(3)
