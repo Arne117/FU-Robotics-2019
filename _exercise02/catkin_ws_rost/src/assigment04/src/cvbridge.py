@@ -95,9 +95,9 @@ class image_converter:
     # Aufgabe 3 Change image threshhold
     ret,thresh1 = cv2.threshold(croppedImg, 200, 255, cv2.THRESH_BINARY)
 
-    # whitePixels = self.getWhitePixels(thresh1)
-    #
-    # self.ransec(whitePixels, thresh1)
+    whitePixels = self.getWhitePixels(thresh1)
+
+    self.ransec(whitePixels, thresh1)
 
     cv2.imshow("Image window", thresh1)
     cv2.waitKey(3)
