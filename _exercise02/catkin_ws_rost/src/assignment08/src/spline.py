@@ -16,42 +16,40 @@ class Spline:
         self.gps_sub = rospy.Subscriber("/clicked_point", PointStamped, self.clicked_point_callback)
 
         # Publischer
-        self.marker_pub = rospy.Publisher("/visualization_msgs/Marker", Marker, queue_size=1)
+        self.outerlane_marker_pub = rospy.Publisher("/visualization_msgs/outerlane", Marker, queue_size=1)
+        self.innerlane_marker_pub = rospy.Publisher("/visualization_msgs/innerlane", Marker, queue_size=1)
         self.point_clicked_pub = rospy.Publisher("/visualization_msgs/Marker/point_clicked", Marker, queue_size=1)
-        self.point_closest_pub = rospy.Publisher("/visualization_msgs/Marker/point_closest", Marker, queue_size=1)
+        self.point_closest_outer_pub = rospy.Publisher("/visualization_msgs/Marker/point_closest_outer", Marker, queue_size=1)
+        self.point_closest_inner_pub = rospy.Publisher("/visualization_msgs/Marker/point_closest_inner", Marker, queue_size=1)
+        self.lookahead_outer_pub = rospy.Publisher("/visualization_msgs/Marker/lookahead_outer", Marker, queue_size=1)
+        self.lookahead_inner_pub = rospy.Publisher("/visualization_msgs/Marker/lookahead_inner", Marker, queue_size=1)
 
         self.marker = self.createMarker()
         self.point_clicked = self.createMarker()
-        self.point_closest = self.createMarker()
+        self.point_closest_outer = self.createMarker()
+        self.point_closest_inner = self.createMarker()
+
+        self.outerLookaheadMarker = self.createMarker()
+        self.innerLookaheadMarker = self.createMarker()
 
         # Values
         self.innerlane = np.load('/home/arne/Documents/catkin_ws_rost/_exercise02/catkin_ws_rost/src/assignment08/src/lane1.npy')
         self.outerlane = np.load('/home/arne/Documents/catkin_ws_rost/_exercise02/catkin_ws_rost/src/assignment08/src/lane2.npy')
-        self.supportVectors = []
 
+        self.outerSplineX, self.outerSplineY = self.calculatePoints(self.outerlane)
+        self.innerSplineX, self.innerSplineY = self.calculatePoints(self.innerlane)
 
-        counter = 0
-        while len(self.outerlane) > counter:
-            if len(self.supportVectors) == 0:
-                self.supportVectors.append(self.outerlane[counter])
-            else:
-                self.supportVectors.append(self.outerlane[counter])
-            counter += int(len(self.outerlane)  / 20)
+        self.outerlaneMarker = self.drawMarker(self.outerlane, self.outerSplineX, self.outerSplineY)
+        self.innerlaneMarker = self.drawMarker(self.innerlane, self.innerSplineX, self.innerSplineY)
 
-        self.supportVectors = np.array(self.supportVectors)
+        self.lookaheadWidth = 0.3
 
-        arc = self.supportVectors[:,0]
-        x = self.supportVectors[:,1]
-        y = self.supportVectors[:,2]
+        print('init done')
 
-        self.splineX = interpolate.CubicSpline(arc, x, axis=0, bc_type='not-a-knot', extrapolate=None)
-        self.splineY = interpolate.CubicSpline(arc, y, axis=0, bc_type='not-a-knot', extrapolate=None)
-
-        print(self.splineX(0.01), self.splineY(0.01))
-
-        steps = np.arange(0.01, self.outerlane[-1][0], 0.01)
-        splineX_samples = self.splineX(steps)
-        splineY_samples = self.splineY(steps)
+    def drawMarker(self, lane, splineX, splineY):
+        steps = np.arange(0.01, lane[-1][0], 0.01)
+        splineX_samples = splineX(steps)
+        splineY_samples = splineY(steps)
 
         marker = self.createMarker()
 
@@ -65,7 +63,25 @@ class Spline:
             marker.points.append(line_point)
             i += 1
 
-        self.marker = marker
+        return marker
+
+    def calculatePoints(self, lane):
+        supportVectors = []
+        counter = 0
+        while len(lane) > counter:
+            if len(supportVectors) == 0:
+                supportVectors.append(lane[counter])
+            else:
+                supportVectors.append(lane[counter])
+            counter += int(len(lane)  / 20)
+
+        supportVectors = np.array(supportVectors)
+
+        arc = supportVectors[:,0]
+        x = supportVectors[:,1]
+        y = supportVectors[:,2]
+
+        return interpolate.CubicSpline(arc, x, axis=0, bc_type='not-a-knot', extrapolate=None), interpolate.CubicSpline(arc, y, axis=0, bc_type='not-a-knot', extrapolate=None)
 
     def createMarker(self):
         marker = Marker()
@@ -108,7 +124,14 @@ class Spline:
 
         # math.calculateDistance(msg.point.x, msg.point.y, binary.x, binary.y)
 
-
+        marker_close = self.createMarker()
+        marker_close.type = marker.SPHERE
+        marker_close.color.r = 0.0
+        marker_close.color.a = 1.0
+        marker_close.scale.x = 0.05
+        marker_close.scale.y = 0.05
+        marker_close.scale.z = 0.05
+        self.point_closest_outer = marker_close
 
         marker_close = self.createMarker()
         marker_close.type = marker.SPHERE
@@ -117,23 +140,50 @@ class Spline:
         marker_close.scale.x = 0.05
         marker_close.scale.y = 0.05
         marker_close.scale.z = 0.05
-        self.point_closest = marker_close
+        self.point_closest_inner = marker_close
 
+        outerArc, outerX, outerY = self.binarySearch(self.outerlane, self.outerSplineX, self.outerSplineY, msg, self.point_closest_outer)
+        innerArc, innerX, innerY = self.binarySearch(self.innerlane, self.innerSplineX, self.innerSplineY, msg, self.point_closest_inner)
+
+        self.drawLookAhead(outerArc, self.outerLookaheadMarker, self.outerSplineX, self.outerSplineY, self.lookaheadWidth)
+        self.drawLookAhead(innerArc, self.innerLookaheadMarker, self.innerSplineX, self.innerSplineY, self.lookaheadWidth)
+
+    def drawLookAhead(self, arc, marker, splineX, splineY, lookaheadWidth):
+        lookaheadArc = arc + lookaheadWidth
+        lookaheadX = splineX(lookaheadArc)
+        lookaheadY = splineY(lookaheadArc)
+
+        marker.type = marker.SPHERE
+        marker.pose.position.x = lookaheadX
+        marker.pose.position.y = lookaheadY
+        marker.color.r = 0.0
+        marker.color.g = 0.0
+        marker.color.b = 1.0
+        marker.color.a = 1.0
+        marker.scale.x = 0.05
+        marker.scale.y = 0.05
+        marker.scale.z = 0.05
+
+        return lookaheadArc, lookaheadX, lookaheadY
+
+    def binarySearch(self, lane, splineX, splineY, msg, marker):
         # Startpoint
-        arc = self.outerlane[int(len(self.outerlane) / 2)][0]
+        arc = lane[int(len(lane) / 2)][0]
         newArc = arc
         step = 0.5
-        dist = math.hypot(self.splineX(arc) - msg.point.x, self.splineY(arc) - msg.point.y)
+        dist = math.hypot(splineX(arc) - msg.point.x, splineY(arc) - msg.point.y)
         distanceChange = 100
         i = 0
+        newX = 0
+        newY = 0
 
         while distanceChange >= 0.0001:
             newArc = newArc + step
-            newX = self.splineX(newArc)
-            newY = self.splineY(newArc)
+            newX = splineX(newArc)
+            newY = splineY(newArc)
 
-            self.point_closest.pose.position.x = newX
-            self.point_closest.pose.position.y = newY
+            marker.pose.position.x = newX
+            marker.pose.position.y = newY
 
             newDist = math.hypot(newX - msg.point.x, newY - msg.point.y)
             stepChange = dist - newDist
@@ -141,15 +191,15 @@ class Spline:
                 step *= -1
                 if i > 0:
                     step = step / 2
-                print('swap')
+                # print('swap')
             else:
                 distanceChange = stepChange
-            print(i, "step", step, " newArc: ", newArc, " newDist: ", newDist, " distanceChange: ", distanceChange)
+            # print(i, "step", step, " newArc: ", newArc, " newDist: ", newDist, " distanceChange: ", distanceChange)
             dist = newDist
             i += 1
-            time.sleep(0.3)
+            # time.sleep(0.3)
 
-            
+        return newArc, newX, newY
 
 
 def main(args):
@@ -157,9 +207,14 @@ def main(args):
   spline = Spline()
 
   while not rospy.is_shutdown():
-      spline.marker_pub.publish(spline.marker)
+      spline.outerlane_marker_pub.publish(spline.outerlaneMarker)
+      spline.innerlane_marker_pub.publish(spline.innerlaneMarker)
       spline.point_clicked_pub.publish(spline.point_clicked)
-      spline.point_closest_pub.publish(spline.point_closest)
+      spline.point_closest_outer_pub.publish(spline.point_closest_outer)
+      spline.point_closest_inner_pub.publish(spline.point_closest_inner)
+      spline.lookahead_outer_pub.publish(spline.outerLookaheadMarker)
+      spline.lookahead_inner_pub.publish(spline.innerLookaheadMarker)
+
       time.sleep(0.1)
 
   try:
