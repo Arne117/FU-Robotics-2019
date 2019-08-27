@@ -31,17 +31,25 @@ class Navigation:
 
     def on_localization(self, msg):
         point = np.array([msg.pose.pose.position.x, msg.pose.pose.position.y])
+        # lanes[0] innerlane
         look1 = self.map.lanes[0].lookahead_point(point , 0.3)
+
+        v = look1 - point
 
         quat = [msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z, msg.pose.pose.orientation.w]
         roll, pitch, carYaw = tf.transformations.euler_from_quaternion(quat)
         print("carYaw: ", carYaw)
 
         # angle = math.acos(np.dot(point, look1[0]) / (abs(point) * abs(look1[0])))
-        desiredAngle = self.angle_between(point, look1[0])
-        print("desiredAngle: ", desiredAngle)
-        self.steeringAngle = desiredAngle - carYaw
-        print("steeringAngleTotal:", self.steeringAngle)
+        # desiredAngle = self.angle_between(point, look1[0])
+        # print("desiredAngle: ", desiredAngle)
+        # self.steeringAngle = desiredAngle - carYaw
+        # print("steeringAngleTotal:", self.steeringAngle)
+
+        # rot(-yaw) = R
+        R = np.array(((np.cos(-carYaw), np.sin(-carYaw)), (np.sin(-carYaw), np.cos(-carYaw))))
+        Vmap = np.dot(R, look1[0])
+        self.steeringAngle = np.arctan2(Vmap[1], Vmap[0])
 
     def unit_vector(self, vector):
         return vector / np.linalg.norm(vector)

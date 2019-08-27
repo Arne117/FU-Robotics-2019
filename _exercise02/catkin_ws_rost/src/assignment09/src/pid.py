@@ -33,10 +33,8 @@ class PID:
         self.integral_error = 0.0
         self.last_error = 0.0
 
-        # this should be changed from a topic for future tasks
         self.desired_angle = 0
-
-        self.speed = 0.0
+        self.speed = 0.2
 
         print('init PID done')
 
