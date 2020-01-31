@@ -1,8 +1,0 @@
-Umrechnung von Koordinatensysteme englisch mapping
-
-matrix rotation reihnfolge von unten (Seite 8) [BA R]
-
-Nicht Transformationsmatrix (hat zusätlich translation)
-
-Rotationsmatrix nur rotation um den gleichen Koordinatenursprung
-Scalar Produkt (Vektor x Vektor)
